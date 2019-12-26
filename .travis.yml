@@ -2,6 +2,8 @@
 sudo: false
 # Set the build language to Python
 language: python
-python: 3.7
+python: 
+  - 3.7
 # Define executable
-script: python3 start.py
+script: 
+  - python3 start.py
