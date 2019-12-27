@@ -1,5 +1,3 @@
-from .config import alphavantage
-
 import requests
 import os
 import pandas as pd
