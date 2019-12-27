@@ -1,13 +1,16 @@
 from .config import alphavantage
 
 import requests
+import os
 import pandas as pd
 import numpy as np
 
 
 class MarketData:
+    '''Querying and caching of stock market data. Currently based on data from alphavantage.co'''
 
     _cache = {}
+    _api_key = os.getenv('ALPHAVANTAGE_API_KEY')
 
     def __init__(self):
         pass
@@ -19,23 +22,38 @@ class MarketData:
         return self._cache[symbol]
 
     def request_data(self, function_string, symbol):
+        # Note: This function only implements daily time series currently
+        if function_string != 'TIME_SERIES_DAILY':
+            raise NotImplementedError
+        response_data_key = 'Time Series (Daily)'
+        response_columns_mapper = {'index': 'date',
+                                   '1. open': 'open',
+                                   '2. high': 'high',
+                                   '3. low': 'low',
+                                   '4. close': 'close',
+                                   '5. volume': 'volume'}
+        # For security reasons the api key is supplied via
+        if len(os.getenv('ALPHAVANTAGE_API_KEY')) <= 1:
+            raise AttributeError(
+                'AlphaVantage API key not found in environment variables.')
+        # Carry out query
         response = requests.get('https://www.alphavantage.co/query',
                                 params={
                                     'function': function_string,
                                     'symbol': symbol,
                                     'outputsize': 'full',
-                                    'apikey': alphavantage.secret_api_key
+                                    'apikey': os.getenv('ALPHAVANTAGE_API_KEY')
                                 })
         res_json = response.json()
-        if 200 == response.status_code and alphavantage.data_key_daily in res_json:
+        if 200 == response.status_code and response_data_key in res_json:
             # todo: also handle meta data
             # read data frame from json response
             dfn = pd.DataFrame.from_dict(
-                res_json[alphavantage.data_key_daily], orient='index')
+                res_json[response_data_key], orient='index')
             # the date is given as unnamed index, create a new index
             dfn.reset_index(inplace=True)
             # rename columns, add symbol column
-            dfn = dfn.rename(columns=alphavantage.columns_mapper)
+            dfn = dfn.rename(columns=response_columns_mapper)
             # data was read as strings, convert to suitable data types and sort
             dfn = dfn.astype({'open': float, 'high': float,
                               'low': float, 'close': float, 'volume': int})
