@@ -7,17 +7,24 @@ import numpy as np
 class MarketData:
     '''Querying and caching of stock market data. Currently based on data from alphavantage.co'''
 
-    _cache = {}
+    _cache_file = './marketdata_cache.h5'
     _api_key = os.getenv('ALPHAVANTAGE_API_KEY')
 
     def __init__(self):
         pass
 
     def get_daily(self, symbol):
-        if symbol not in list(self._cache.keys()):
+        # For rapid development we cache the data in a HDF5 file. Yet, this method has some drawbacks.
+        # Need to add a slash in front of the key and replace the ^ to suppress a warning
+        store = pd.HDFStore(self._cache_file)
+        symbol_key = '/' + symbol.replace('^', 'hat')
+        if symbol_key not in store.keys():
+            print(f'Retrieving {symbol}')
             data = self.request_data('TIME_SERIES_DAILY', symbol)
-            self._cache.update({symbol: data})
-        return self._cache[symbol]
+            store.put(key=symbol_key, value=data, append=False)
+        data = store.get(symbol_key)
+        store.close()
+        return data
 
     def request_data(self, function_string, symbol):
         # Note: This function only implements daily time series currently

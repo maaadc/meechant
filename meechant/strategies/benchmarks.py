@@ -5,6 +5,20 @@ import pandas as pd
 import numpy as np
 
 
+class StatusQuo(TradingStrategy):
+    '''Example Strategy which does exactly nothing used as a benchmark.'''
+    name = 'Status Quo'
+    symbols = ['^GSPC']
+    weights = [1.0]
+    cash_buffer = 0.0
+    frequency = None
+    data_span = pd.Timedelta('1W')
+
+    def request(self, timestamp, data, portfolio, cash):
+        # Do nothing
+        return []
+
+
 class BuyAndHold(TradingStrategy):
     '''Example Strategy to Buy and Hold the S&P 500 used as a benchmark.'''
     name = 'Buy&Hold S&P500'
@@ -42,7 +56,6 @@ class StockBonds6040(TradingStrategy):
     data_span = pd.Timedelta('1W')
 
     def request(self, timestamp, data, portfolio, cash):
-        # For now we have an empty portfolio...
         # Get latest closing price, which is likely the next price we can buy something for
         orders = []
         # print(portfolio)

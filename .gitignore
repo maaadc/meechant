@@ -22,3 +22,6 @@ coverage.xml
 
 
 .vscode
+
+# Cache file
+marketdata_cache.h5
