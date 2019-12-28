@@ -5,8 +5,9 @@ python:
 # Define executable
 install:
   - pip3 install codecov
-script: 
-  - coverage run start.py
+# Run the tests
+script:
+  - coverage3 run start.py
 # Push results to codecov (token set in config)
 after_success:
   - codecov
