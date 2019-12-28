@@ -1,9 +1,12 @@
-# Disable sudo to speed up the build
-sudo: false
 # Set the build language to Python
 language: python
 python: 
   - 3.7
 # Define executable
+install:
+  - pip3 install codecov
 script: 
-  - python3 start.py
+  - coverage run start.py
+# Push results to codecov (token set in config)
+after_success:
+  - codecov
