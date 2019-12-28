@@ -5,17 +5,17 @@ import pandas as pd
 import numpy as np
 
 
-class StatusQuo(TradingStrategy):
+class KeepTheCash(TradingStrategy):
     '''Example Strategy which does exactly nothing used as a benchmark.'''
-    name = 'Status Quo'
-    symbols = ['^GSPC']
-    weights = [1.0]
+    name = 'KeepTheCash'
+    symbols = []
+    weights = []
     cash_buffer = 0.0
     frequency = None
     data_span = pd.Timedelta('1W')
 
     def request(self, timestamp, data, portfolio, cash):
-        # Do nothing
+        # Never place an order
         return []
 
 
@@ -72,7 +72,7 @@ class StockBonds6040(TradingStrategy):
             order_amount = (1.0 - self.cash_buffer) * total_cash * \
                 (target_weight - current_weight) / order_price
             # print([symbol, current_weight, target_weight, np.abs(current_weight - target_weight)])
-            if np.abs(current_weight - target_weight) > 0.05:
+            if np.abs(current_weight - target_weight) > 0.01:
                 orders.append(
                     Transaction(timestamp, symbol, order_amount, order_price))
         return orders
