@@ -2,12 +2,12 @@
 language: python
 python: 
   - 3.7
-# Define executable
+# Install necessary packages
 install:
-  - pip3 install codecov
-# Run the tests
+  - pip install -r requirements.txt
+# Define executable
 script:
-  - coverage3 run start.py
+  - coverage run start.py
 # Push results to codecov (token set in config)
 after_success:
   - codecov
