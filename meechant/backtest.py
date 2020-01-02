@@ -12,16 +12,19 @@ Transaction = collections.namedtuple('Transaction', ['time', 'symbol', 'amount',
 
 class BackTest():
     '''Simulation of a trading strategy with historical market data'''
-    # input variables
+    # Parameters for the actual backtesting
     initial_cash = 1000.0
     broker_model = None
     cost_model = None
-    start_date = pd.Timestamp('2004-12-01T20:00')
-    end_date = pd.Timestamp('2019-12-01T20:00')
+    start_date = pd.Timestamp('2014-01-01T20:00')
+    end_date = pd.Timestamp('2019-01-01T20:00')
+    # Parameters for the statistical analysis
+    symbol_risk_free = '^FVX'  # Treasury Yield 5 Years
+    symbol_market = '^GSPC'  # The asset used for comparison with the market, here we use the the S&P 500
     # output variables
     name = ''
+    stats = {}
     timeline = pd.DataFrame({})
-
     # private members
     _cash = 0.0
     _orders = []
@@ -36,14 +39,48 @@ class BackTest():
         self.name = self._strategy.name
         # Todo: Add sanity checks to ensure consistency of strategy
         # Gather necessary stock data
-        for symbol in self._strategy.symbols:
+        for symbol in self._strategy.symbols + [self.symbol_risk_free, self.symbol_market]:
             if symbol not in self._stock_data.keys():
                 self._stock_data.update(
                     {symbol: market.get_daily(symbol)}
                 )
         # Todo: Ensure that market data dates back long enough to cover the
         # start date and desired period for the strategy
+        print(f'> Backtesting \x1b[93m{self._strategy.name}\x1b[37m')
         self.run()
+
+    def _calc_statistics(self) -> Dict[str, float]:
+        # Note: All return rates are given on an annual basis, if not stated otherwise.
+        stats = {'name': self.name}
+        # Compute ratio of change between two consecutive data points in timeline.
+        symbol_returns = self.timeline.pct_change(periods=1).dropna()
+        # Get return rate over the whole sampling period
+        stats['total'] = symbol_returns.agg(lambda x: (x + 1).prod() - 1)
+        # Get averaged annual return rate
+        duration_years = (self.end_date - self.start_date).days / 365
+        stats['annual'] = (1.0 + stats['total'])**(1.0 / duration_years) - 1.0
+        # Define annual risk free rate and compute it for each business day.
+        # Todo: Derive from some kind of index
+        risk_free_rate = 0.015
+        risk_free_bdaily = (1.0 + risk_free_rate)**(1.0 / 252) - 1.0
+        # Get market returns serving as a benchmark
+        market_returns = self._stock_data[self.symbol_market][self.start_date:self.end_date][
+            'close'].pct_change(periods=1).dropna()
+        # Compute alpha and beta coefficients of the capital asset pricing model (CAPM).
+        # See https://en.wikipedia.org/wiki/Alpha_(finance) and https://en.wikipedia.org/wiki/Beta_(finance)
+        r_market = market_returns - risk_free_bdaily
+        r_symbol = symbol_returns - risk_free_bdaily
+        stats['beta'] = r_symbol.cov(r_market) / r_market.var()
+        stats['alpha'] = r_symbol.mean() - stats['beta'] * r_market.mean()
+        # Compute averaged indicators based on daily returns.
+        if r_symbol.std() > 0:
+            # Sharpe ratio (annual)
+            # see https://en.wikipedia.org/wiki/Sharpe_ratio
+            stats['Sharpe'] = np.sqrt(252) * r_symbol.mean() / r_symbol.std()
+            # Modigliani risk-adjusted performance (annual)
+            # see https://en.wikipedia.org/wiki/Modigliani_risk-adjusted_performance
+            stats['M2'] = 252 * r_symbol.mean() * r_market.std() / r_symbol.std() + risk_free_rate
+        return stats
 
     def _calc_timeline(self) -> pd.Series:
         '''Return pd.Dataframe for all all ... only where stock data is available.'''
@@ -119,5 +156,7 @@ class BackTest():
             self._execute_orders(new_orders)
         # Determine wealth over time for the executed transactions
         self.timeline = self._calc_timeline()
+        self.stats = self._calc_statistics()
         # Show some stats and Clean up.
-        print(f'> Backtest "{self._strategy.name}" with {len(self._orders)} orders placed.''')
+        print(
+            f'  Annual return is \x1b[1m{100*self.stats["annual"]:.3}%\x1b[0m with {len(self._orders)} orders')

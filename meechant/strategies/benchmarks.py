@@ -6,7 +6,7 @@ import numpy as np
 
 
 class KeepTheCash(TradingStrategy):
-    '''Example Strategy which does exactly nothing used as a benchmark.'''
+    '''Strategy which does exactly nothing.'''
     name = 'KeepTheCash'
     symbols = []
     weights = []
@@ -15,14 +15,13 @@ class KeepTheCash(TradingStrategy):
     data_span = pd.Timedelta('1W')
 
     def request(self, timestamp, data, portfolio, cash):
-        # Never place an order
         return []
 
 
 class BuyAndHold(TradingStrategy):
-    '''Example Strategy to Buy and Hold the S&P 500 used as a benchmark.'''
-    name = 'Buy&Hold S&P500'
-    symbols = ['^GSPC']
+    '''Strategy to buy and hold an index tracking the S&P 500.'''
+    name = 'BuyAndHold SPY'
+    symbols = ['SPY']
     weights = [1.0]
     cash_buffer = 0.0
     frequency = None
@@ -30,11 +29,11 @@ class BuyAndHold(TradingStrategy):
 
     def request(self, timestamp, data, portfolio, cash):
         # Get latest closing price, which is likely the next price we can buy something for
-        latest_price = data['^GSPC']['close'].iloc[-1]
+        latest_price = data[self.symbols[0]]['close'].iloc[-1]
         # Only one transaction needed
         return [Transaction(
             time=timestamp,
-            symbol='^GSPC',
+            symbol=self.symbols[0],
             amount=cash / latest_price,
             price=latest_price
         )]
@@ -51,7 +50,7 @@ class StockBonds6040(TradingStrategy):
     name = '60:40 Stock&Bonds'
     symbols = ['SPY', 'AGG']
     weights = [0.60, 0.40]
-    cash_buffer = 0.01
+    cash_buffer = 0.0
     frequency = pd.tseries.offsets.MonthBegin()
     data_span = pd.Timedelta('1W')
 
@@ -60,8 +59,8 @@ class StockBonds6040(TradingStrategy):
         orders = []
         # print(portfolio)
         # Calculate weights for current market data
-        current_weights = [data[symbol]['close'].iloc[-1]
-                           * portfolio[symbol] for symbol in self.symbols]
+        current_weights = [data[symbol]['close'].iloc[-1] * portfolio[symbol]
+                           for symbol in self.symbols]
         if np.sum(current_weights) > 0:
             current_weights /= np.sum(current_weights)
         # Only suggest an order if weights drifted too far
@@ -73,6 +72,5 @@ class StockBonds6040(TradingStrategy):
                 (target_weight - current_weight) / order_price
             # print([symbol, current_weight, target_weight, np.abs(current_weight - target_weight)])
             if np.abs(current_weight - target_weight) > 0.01:
-                orders.append(
-                    Transaction(timestamp, symbol, order_amount, order_price))
+                orders.append(Transaction(timestamp, symbol, order_amount, order_price))
         return orders
