@@ -16,8 +16,8 @@ class BackTest():
     initial_cash = 1000.0
     broker_model = None
     cost_model = None
-    start_date = pd.Timestamp('2014-01-01T20:00')
-    end_date = pd.Timestamp('2019-01-01T20:00')
+    start_date = pd.Timestamp('2005-01-01T20:00')
+    end_date = pd.Timestamp('2020-01-01T20:00')
     # Parameters for the statistical analysis
     symbol_risk_free = '^FVX'  # Treasury Yield 5 Years
     symbol_market = '^GSPC'  # The asset used for comparison with the market, here we use the the S&P 500
@@ -157,6 +157,6 @@ class BackTest():
         # Determine wealth over time for the executed transactions
         self.timeline = self._calc_timeline()
         self.stats = self._calc_statistics()
-        # Show some stats and Clean up.
+        # Show some stats and clean up.
         print(
-            f'  Annual return is \x1b[1m{100*self.stats["annual"]:.3}%\x1b[0m with {len(self._orders)} orders')
+            f'  Annual return is \x1b[1m{100*self.stats["annual"]:5.2f} %\x1b[0m with {len(self._orders)} orders')
