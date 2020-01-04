@@ -46,7 +46,8 @@ class BackTest():
                 )
         # Todo: Ensure that market data dates back long enough to cover the
         # start date and desired period for the strategy
-        print(f'> Backtesting \x1b[93m{self._strategy.name}\x1b[37m')
+        print(
+            f'> Backtesting \x1b[93m{self._strategy.name}\x1b[0m from {self.start_date} to {self.end_date}')
         self.run()
 
     def _calc_statistics(self) -> Dict[str, float]:
@@ -113,9 +114,14 @@ class BackTest():
             execution_data = self._stock_data[order.symbol].loc[order.time:].iloc[0]
             execution_price = execution_data['open']
             # Simulate the actual order, that would be executed with the broker
-            # Todo: Include
-            execution_cash = order.amount * order.price
-            execution_amount = execution_cash / execution_price
+            # Note: Buy as much as possible with the invested cash and sell everything we own
+            if order.amount > 0:
+                execution_cash = order.amount * order.price
+                execution_amount = execution_cash / execution_price
+            else:
+                # Sell everything
+                execution_amount = order.amount
+                execution_cash = order.amount * execution_price
             execution_order = Transaction(
                 time=execution_data.name,
                 symbol=order.symbol,

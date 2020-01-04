@@ -101,7 +101,7 @@ class MovingAverageCrossover(TradingStrategy):
             # Sell all
             amount = -1 * portfolio[self.symbols[0]]
         # Return the order
-        if amount != 0:
+        if np.abs(amount) > 1e-3:
             return [Transaction(timestamp, self.symbols[0], amount, latest_price)]
         else:
             return []
