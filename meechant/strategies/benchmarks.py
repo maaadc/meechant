@@ -51,7 +51,7 @@ class StockBonds6040(TradingStrategy):
     symbols = ['SPY', 'AGG']
     weights = [0.60, 0.40]
     cash_buffer = 0.0
-    frequency = pd.tseries.offsets.MonthBegin()
+    frequency = pd.tseries.offsets.QuarterBegin()
     data_span = pd.Timedelta('1W')
 
     def request(self, timestamp, data, portfolio, cash):
@@ -68,8 +68,8 @@ class StockBonds6040(TradingStrategy):
                                         * portfolio[symbol] for symbol in self.symbols])
             order_amount = (1.0 - self.cash_buffer) * total_cash * \
                 (target_weight - current_weight) / order_price
-            # print([symbol, current_weight, target_weight, np.abs(current_weight - target_weight)])
-            if np.abs(current_weight - target_weight) > 0.01:
+            # define threshold
+            if np.abs(current_weight - target_weight) > 0.02:
                 orders.append(Transaction(timestamp, symbol, order_amount, order_price))
         return orders
 

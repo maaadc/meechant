@@ -1,10 +1,19 @@
-from .marketdata import market
 
-import collections
-import pandas as pd
-import numpy as np
 
+import seaborn as sns
 from typing import Dict
+from .marketdata import market
+import collections
+import numpy as np
+import pandas as pd
+# plotting
+import matplotlib
+import matplotlib.pyplot as plt
+from pandas.plotting import register_matplotlib_converters
+register_matplotlib_converters()
+sns.set()
+sns.set_context('talk')  # enlarged font
+plt.rc('figure', figsize=(16, 10))  # default figure size
 
 
 Transaction = collections.namedtuple('Transaction', ['time', 'symbol', 'amount', 'price'])
@@ -166,3 +175,51 @@ class BackTest():
         # Show some stats and clean up.
         print(
             f'  Annual return is \x1b[1m{100*self.stats["annual"]:5.2f} %\x1b[0m with {len(self._orders)} orders')
+
+    def plot(self) -> matplotlib.figure.Figure:
+        '''Creates an overview plot of the backtesting performance'''
+        num_symbols = len(self._strategy.symbols)
+        # create figure and axes
+        fig, ax = plt.subplots(nrows=num_symbols+1, ncols=1, sharex=True,
+                               figsize=(16, 4*(num_symbols+1)))
+        fig.suptitle(self.name, fontsize=24)
+        # plot stock data with annotated order symbols
+        for k in range(len(self._strategy.symbols)):
+            symbol = self._strategy.symbols[k]
+            # get stock data for the specified time frame
+            df = market.get_daily(symbol)
+            df = df[self.start_date:self.end_date]
+            # plot closing price for specified symbol and derived exponential moving averages
+            ax[k].plot(df['close'], 'k-', color=3*[0.25])
+            ax[k].plot(df['close'].ewm(halflife=30, adjust=False).mean(), 'b-.')
+            ax[k].plot(df['close'].ewm(halflife=150, adjust=False).mean(), 'b--')
+            # plot buying orders
+            amount = np.array(
+                [o.amount for o in self._orders if o.amount > 0 and symbol == o.symbol])
+            ax[k].scatter([o.time for o in self._orders if o.amount > 0 and symbol == o.symbol],
+                          [o.price for o in self._orders if o.amount > 0 and symbol == o.symbol],
+                          s=20**2 * np.sqrt(amount/amount.mean()),
+                          c='green', marker='^', alpha=0.7, zorder=10)
+            # plot selling orders
+            amount = np.array([np.abs(o.amount)
+                               for o in self._orders if o.amount < 0 and symbol == o.symbol])
+            ax[k].scatter([o.time for o in self._orders if o.amount < 0 and symbol == o.symbol],
+                          [o.price for o in self._orders if o.amount < 0 and symbol == o.symbol],
+                          s=20**2 * np.sqrt(amount/amount.mean()),
+                          c='red', marker='v', alpha=0.7, zorder=10)
+            # beautify
+            ax[k].set_ylabel(f'{symbol} (USD)')
+        # add legend to first plot
+        ax[0].legend(['symbol', 'EMA30', 'EMA150', 'buy', 'sell'],
+                     loc='best', scatterpoints=1, markerscale=0.8, ncol=5)
+        # plot total wealth over time
+        ax[-1].plot(self.timeline, 'k-', color=3*[0.25])
+        ax[-1].set_ylabel('wealth (USD)')
+        ax[-1].set_xlabel('time (years)')
+        # add statistics output
+        stats_str = (f'Returns: {100*self.stats["total"]:3.2f} % total, {100*self.stats["annual"]:3.2f} % annual\n'
+                     f'CAPM: alpha = {self.stats["alpha"]:1.4f}, beta = {self.stats["beta"]:1.4f}\n'
+                     f'Sharpe = {self.stats["Sharpe"]:.3f}, M2 = {100*self.stats["M2"]:.3f} %')
+        ax[-1].text(0.01, 0.95, stats_str, transform=ax[-1].transAxes,
+                    verticalalignment='top')
+        return fig
