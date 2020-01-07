@@ -1,7 +1,9 @@
-from ..backtest import Transaction
-
 import abc
+import collections
 from typing import List
+
+
+Transaction = collections.namedtuple('Transaction', ['time', 'symbol', 'amount', 'price'])
 
 
 class TradingStrategy(abc.ABC):

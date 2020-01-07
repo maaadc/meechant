@@ -1,5 +1,4 @@
-from . import TradingStrategy
-from ..backtest import Transaction
+from . import TradingStrategy, Transaction
 
 import pandas as pd
 import numpy as np

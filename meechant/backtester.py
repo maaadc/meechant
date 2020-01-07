@@ -1,9 +1,8 @@
 
-
 import seaborn as sns
 from typing import Dict
 from .marketdata import market
-import collections
+from .strategies import Transaction
 import numpy as np
 import pandas as pd
 # plotting
@@ -16,10 +15,7 @@ sns.set_context('talk')  # enlarged font
 plt.rc('figure', figsize=(16, 10))  # default figure size
 
 
-Transaction = collections.namedtuple('Transaction', ['time', 'symbol', 'amount', 'price'])
-
-
-class BackTest():
+class BackTester():
     '''Simulation of a trading strategy with historical market data'''
     # Parameters for the actual backtesting
     initial_cash = 1000.0
@@ -64,7 +60,7 @@ class BackTest():
         stats = {'name': self.name}
         # Compute ratio of change between two consecutive data points in timeline.
         symbol_returns = self.timeline.pct_change(periods=1).dropna()
-        # Get return rate over the whole sampling period
+        # Get total return rate over the whole sampling period
         stats['total'] = symbol_returns.agg(lambda x: (x + 1).prod() - 1)
         # Get averaged annual return rate
         duration_years = (self.end_date - self.start_date).days / 365
