@@ -3,7 +3,9 @@ version = 1
 [[analyzers]]
 name = "python"
 enabled = true
+test_patterns = ["tests/**"]
 
   [analyzers.meta]
   runtime_version = "3.x.x"
+
 
